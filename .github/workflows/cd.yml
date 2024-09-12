@@ -6,7 +6,7 @@ on:
       - 'main'
 
   schedule:
-    - cron: '0 * * * *' # run every hour
+    - cron: '*/10 * * * *' # run every ten minutes
   workflow_dispatch:
     
 
