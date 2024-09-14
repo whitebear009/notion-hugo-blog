@@ -11,7 +11,7 @@ import { NotionToMarkdown } from "./markdown/notion-to-md";
 import YAML from "yaml";
 import { sh } from "./sh";
 import { DatabaseMount, PageMount } from "./config";
-import { getPageTitle, getCoverLink, getFileName } from "./helpers";
+import { getPageTitle, getCoverLink, getDirectoryName } from "./helpers";
 import { MdBlock } from "./markdown/types";
 import path from "path";
 import { getContentFile } from "./file";
@@ -207,25 +207,41 @@ export async function savePage(
   const postpath = path.join(
     "content",
     mount.target_folder,
-    getFileName(getPageTitle(page), page.id),
+    getDirectoryName(getPageTitle(page), page.id),
   );
-  const post = getContentFile(postpath);
-  if (post) {
-    const metadata = post.metadata;
-    // if the page is not modified, continue
-    if (
-      post.expiry_time == null &&
-      metadata.last_edited_time === page.last_edited_time
-    ) {
-      console.info(`[Info] The post ${postpath} is up-to-date, skipped.`);
-      return;
-    }
-  }
-  // otherwise update the page
-  console.info(`[Info] Updating ${postpath}`);
+  console.log(`Post path: ${postpath}`);
+  // 确保路径安全
+  const sanitizedPostPath = path.normalize(postpath).replace(/(^\.\.[\\\/]+|\/\.\.\/)/g, '');
 
-  const { title, pageString } = await renderPage(page, notion);
-  const fileName = getFileName(title, page.id);
-  await sh(`hugo new "${mount.target_folder}/${fileName}"`, false);
-  fs.writeFileSync(`content/${mount.target_folder}/${fileName}`, pageString);
+  // 否则更新页面
+  console.info(`[Info] Updating ${sanitizedPostPath}`);
+  console.debug(`[Debug] Page: ${JSON.stringify(page)}`);
+
+  try {
+    const { title, pageString } = await renderPage(page, notion);
+    const fileName = getDirectoryName(title, page.id);
+
+    // 检查目录是否已存在
+    const directoryPath = path.join("content", mount.target_folder, fileName);
+    const directoryExists = await fs.access(directoryPath).then(() => true).catch(() => false);
+    if (directoryExists) {
+      // 删除目录
+      await fs.rmdir(directoryPath, { recursive: true });
+      console.info(`[Info] Directory exists and deleted: ${directoryPath}`);
+    }
+
+    // 创建目录
+    await fs.mkdir(directoryPath, { recursive: true });
+    console.info(`[Info] Directory created: ${directoryPath}`);
+
+    // 在目录下创建 index.md 文件
+    const indexPath = path.join(directoryPath, 'index.md');
+    await fs.writeFile(indexPath, pageString);
+    console.info(`[Info] File created: ${indexPath}`);
+
+    // 使用异步命令创建新文件
+    await sh(`hugo new "${directoryPath}/index.md"`, false );
+  } catch (error) {
+    console.error(`[Error] Failed to save page: ${error}`);
+  }
 }
