@@ -7,6 +7,7 @@ import {
   RichTextItemResponse,
   TextRichTextItemResponse,
   VideoBlockObjectResponse,
+  SyncedBlockBlockObjectResponse,
 } from "@notionhq/client/build/src/api-endpoints";
 import { CalloutIcon } from "./types";
 import { getPageRelrefFromId } from "./notion";
@@ -264,4 +265,8 @@ export const audio = (block: AudioBlockObjectResponse) => {
   const url =
     audioBlock.type === "file" ? audioBlock.file.url : audioBlock.external.url;
   return `<audio controls src="${url}"></audio>`;
+};
+
+export const syncedBlock = (block: SyncedBlockBlockObjectResponse) => {
+  return block;
 };

@@ -126,6 +126,15 @@ export class NotionToMarkdown {
 
     for (const block of blocks) {
       if (!isFullBlock(block)) continue;
+      if (block.type === "synced_block"){
+        const synced_block_id = block.synced_block.synced_from?.block_id;
+        if (synced_block_id) {
+          const synced_block = await this.pageToMarkdown(synced_block_id, totalPage);
+          return synced_block;
+        } else {
+          return [];
+        }
+      }
       let expiry_time: string | undefined = undefined;
       if (block.type === "pdf" && block.pdf.type === "file") {
         expiry_time = block.pdf.file.expiry_time;
