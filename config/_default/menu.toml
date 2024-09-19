@@ -18,7 +18,7 @@ icon = "brand-github"
 [[social]]
 identifier = "mail"
 name = "Mail"
-url = "whitebear009@gmail.com"
+url = "mailto:whitebear009@gmail.com"
 
 [social.params]
-icon = "messages"
+icon = "email"
